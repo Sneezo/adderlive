@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html>
+<meta charset="UTF-8">
+	<head>
+		<title>Adder</title>
+		<link href="https://fonts.googleapis.com/css?family=Antic+Slab" rel="stylesheet">
+	</head>
+	<body>
+		<div class="grid-container">
+			<div class="grid-item">
+				<h1 id="tasktext">Task</h1>
+			</div>
+			<div class="grid-item">
+				<canvas id="gameCanvas" width="400" height="400"></canvas>
+			</div>
+			<div class="grid-container2">
+				<div class="grid-item">
+					<h2 id="score">Score: </h2>
+				</div>
+				<div class="grid-item">
+					<button id="pause" onclick="pause()" type="button">PAUSE</button>
+				</div>
+			</div>
+			<div class="grid-item" id="controls">
+				<label id="gt" for="gangetabell">Velg gangetabell:</label>
+				<select id="gangetabell" onchange="task.new()" name="gangetabell">
+					<option value="default">1-10</option>
+					<option value="2">2</option>
+					<option value="3">3</option>
+					<option value="4">4</option>
+					<option value="5">5</option>
+					<option value="6">6</option>
+					<option value="7">7</option>
+					<option value="8">8</option>
+					<option value="9">9</option>
+					<option value="11">11</option>
+					<option value="12">12</option>
+					<option value="13">13</option>
+					<option value="14">14</option>
+					<option value="15">15</option>
+					<option value="16">16</option>
+				</select>
+			</div>
+			<div class="grid-item" id="controls2">
+				<label id="modus" for="mode">Velg modus:</label>
+				<select id="mode" onchange="task.new()" name="mode">
+					<option value="gange">Gange</option>
+					<option value="pluss">Pluss</option>
+					<option value="tiervenner">Tiervenn</option>
+				</select>
+			</div>
+		</div>
+		<style type="text/css">
+			#modus
+			{
+				font-size: 26px;
+			}
+			#gt
+			{
+				font-size: 26px;
+			}
+			.grid-container2
+			{
+				display: grid;
+				grid-template-columns: auto auto;
+			}
+			.grid-container
+			{
+				position: absolute;
+				transform: translateX(-50%);
+				width: 30%;
+				height: 80%;
+				left: 50%;
+				top: 5%;
+				display: grid;
+				columns: 1;
+				grid-row-gap: 0px;
+				padding: 0px;
+				align-content: center;
+				row-gap: 0;
+				grid-row-gap: 0;
+				grid-template-rows: min-content;
+			}
+			.grid-item
+			{
+				width: 100%;
+				height:	100%;
+				align-content: center;
+			}
+			#gameCanvas
+			{
+				width: 100%;
+				height: 100%;
+			}
+			#tasktext
+			{
+				width: 100%;
+				text-align: center;
+			}
+			#pause
+			{
+				width: 100%;
+				height: 100%;
+				border: 1px solid black;
+			}
+			#score
+			{
+				width: 100%;
+				height: 100%;
+			}
+		</style>
+
+	<script>
+		var paused = false;
+		let p = document.getElementById("demo")
+		let tasktext = document.getElementById("tasktext")
+		//get canvas
+		const boardGet = document.getElementById('gameCanvas');
+		//create 2d drawing context
+		const screen = gameCanvas.getContext("2d");
+		const screenw = boardGet.width;
+		const screenh = boardGet.height;
+		//state colors
+		const border = "black";
+		const background = "white";
+		const snakecolor = "lightblue";
+		const snake_border_color = "darkblue";
+		//get keyboard input and touch input
+		document.addEventListener("keydown", change_direction);
+		window.addEventListener("load", function() {
+			var el = document.getElementById("gameCanvas");
+			swipedetect(el, function(swipedir){
+				if (swipedir != "none"){
+					if (snake.turned){
+						return
+					}
+					if (swipedir == "right" && snake.dir != "left"){
+						snake.dir = swipedir;
+					}
+					if (swipedir == "left" && snake.dir != "right"){
+						snake.dir = swipedir;
+					}
+					if (swipedir == "up" && snake.dir != "down"){
+						snake.dir = swipedir;
+					}
+					if (swipedir == "down" && snake.dir != "up"){
+						snake.dir = swipedir;
+					}
+					snake.turned = true;
+				}
+			})
+		})
+
+		//add touch functionality
+		function swipedetect(el, callback){
+			var touchsurface = el,
+			swipedir,
+			startX,
+			startY,
+			distX,
+			distY,
+			treshold = 30, //minimum distance to be a swipe
+			restraint = 100, // maximum perpendicular movement
+			allowedTime = 350, // 
+			elapsedTime,
+			startTime,
+			handleswipe = callback || function(swipedir){}
+
+			touchsurface.addEventListener("touchstart", function(e){
+				var touchobj = e.changedTouches[0];
+				swipedir = "none";
+				dist = 0;
+				startX = touchobj.pageX;
+				startY = touchobj.pageY;
+				startTime = new Date().getTime();
+				e.preventDefault()
+			}, false)
+
+			touchsurface.addEventListener("touchmove", function(e){
+				e.preventDefault();
+			}, false)
+
+			touchsurface.addEventListener("touchend", function(e){
+				var touchobj = e.changedTouches[0];
+				distX = touchobj.pageX - startX;
+				distY = touchobj.pageY - startY;
+				elapsedTime = new Date().getTime() - startTime;
+				if(elapsedTime <= allowedTime){
+					if(Math.abs(distX) >= treshold && Math.abs(distY) <= restraint){
+						swipedir = (distX < 0)? "left" : "right"
+					}
+					else if(Math.abs(distY) >= treshold && Math.abs(distX) <= restraint){
+						swipedir = (distY < 0)? "up" : "down"
+					}
+				}
+				handleswipe(swipedir)
+				e.preventDefault()
+			}, false)
+		}
+
+
+		function randInt(min, max){
+  			return Math.floor(Math.random() * (max - min + 1) ) + min;
+		}
+		
+		function clearCanvas(){
+			screen.fillStyle = background;
+			screen.strokeStyle = border;
+			screen.fillRect(0,0,boardGet.width,boardGet.height);
+			screen.strokeRect(0,0,boardGet.width,boardGet.height);
+		}
+
+		class Textbox{
+			constructor(txt="",x,y){
+				if(typeof txt === "string" || txt instanceof String){
+					this.txt = txt;
+				}else{
+					this.txt = String(txt);
+				}
+				
+				screen.baseline = "hanging";
+				screen.font = "26px comic sans";
+				screen.fillStyle = "black";
+				let metrics = screen.measureText(txt);
+				this.width = metrics.width;
+				this.height = metrics.actualBoundingBoxAscent + metrics.actualBoundingBoxDescent;
+				this.x = x;
+				this.y = y - this.height;
+				if (this.x+this.width > screenw){
+					this.x = screenw-this.width;
+				}
+				if (this.y+this.height > screenh){
+					this.y = screenh-this.height;
+				}
+				if (this.y < this.height){
+					this.y = 0;
+				}
+				return this;
+			}
+
+			draw(){
+				
+				screen.baseline = "hanging";
+				screen.font = "26px comic sans";
+				//screen.fillStyle = "blue";
+				//screen.fillRect(this.x,this.y,this.width,this.height);
+				screen.fillStyle = "black";
+				screen.fillText(this.txt,this.x,this.y+this.height);
+				
+
+			}
+		}
+
+		class Task{
+			constructor(mode="gange",bunn=1,topp=10){
+				this.mode = mode;
+				this.bunn = bunn;
+				this.topp = topp;
+				this.n1 = 0;
+				this.n2 = 0;
+				this.ans = 0;
+				this.wrongs = [];
+				this.anspos = [0,0];
+				this.wrongpos = [];
+				this.textboxes = [];
+				this.new();
+
+			}
+
+			new(){
+				//reset stuff
+				this.possiblewrongs = [];
+				this.wrongs = [];
+				this.textboxes = [];
+				//window.alert(document.getElementById('mode').value);
+				this.mode = document.getElementById('mode').value;
+				document.getElementById("score").innerHTML = "Score: " + snake.score;
+				if(this.mode =="gange"){
+					if (document.getElementById("gangetabell").value == "default"){
+						this.bunn = 1;
+						this.topp = 10;
+					}else{
+						this.bunn = document.getElementById("gangetabell").value;
+						this.topp = document.getElementById("gangetabell").value;
+					}
+				}else{
+					this.bunn = 1;
+					this.topp = 10;
+				}
+				if(this.mode=="pluss"){
+					this.n1 = randInt(this.bunn,this.topp);
+					this.n2 = randInt(this.bunn,this.topp);
+					this.ans = this.n1 + this.n2;
+
+					for (var i = this.ans-5; i <= this.ans+5; i++) {
+						this.possiblewrongs.push(i);
+					}
+					this.possiblewrongs.splice(this.possiblewrongs.indexOf(this.ans),1);
+					for (var i = 0; i < 3; i++){
+						this.wrongs.push(this.possiblewrongs.splice(randInt(0,this.possiblewrongs.length-1),1)[0]);
+					}
+					//console.log(this.wrongs);
+					
+
+					
+					this.textboxes.push(new Textbox(this.ans,randInt(0,screenw),randInt(0,screenh)));
+					for(var i = 0; i < 3; i++){
+						this.textboxes.push(new Textbox(this.wrongs[i],0,0));
+					}
+					/**
+					this.wrongs.forEach(function(n){
+						console.log(n);
+						this.textboxes.push(new Textbox(n,0,0));
+					});
+					**/
+					tasktext.innerHTML = String(this.n1) + " + " + String(this.n2);
+				}
+					
+				if(this.mode == "gange"){
+					this.n1 = randInt(1,10);
+					this.n2 = randInt(this.bunn,this.topp);
+					if (document.getElementById("gangetabell").value != "default") {
+						this.n2 = document.getElementById("gangetabell").value;
+					}
+					this.ans = this.n1*this.n2;
+
+					// make list of wrong answer options
+					for (var i = this.ans-5; i < this.ans + 5; i++){
+						this.possiblewrongs.push(i);
+					}
+					// remove correct answer from possible wrongs
+					this.possiblewrongs.splice(this.possiblewrongs.indexOf(this.ans),1);
+					// choose 3 wrong answers to use
+					for (var i = 0; i < 3; i++){
+						this.wrongs.push(this.possiblewrongs.splice(randInt(0,this.possiblewrongs.length-1),1));
+					}
+
+					// create answer text
+					this.textboxes.push(new Textbox(this.ans,0,0));
+
+					// create wrongs text
+					for (var i = 0; i < this.wrongs.length; i++){
+						this.textboxes.push(new Textbox(this.wrongs[i],0,0));
+					}
+
+					//write new tasktext
+					tasktext.innerHTML = String(this.n1) + " x " + String(this.n2);
+				}
+
+				if (this.mode == "tiervenner"){
+					this.n1 = randInt(1,9);
+					this.possiblewrongs = [];
+					this.wrongs = [];
+					this.textboxes = [];
+					this.ans = 10-this.n1;
+
+					// create answer text
+					this.textboxes.push(new Textbox(this.ans,0,0));
+					// create wrong answers text
+					for (var i = 0; i < 3; i++){
+						this.textboxes.push(new Textbox(randInt(1,9),0,0));	
+					}
+				
+				
+					// write tasktext
+					tasktext.innerHTML = String(this.n1) + " + ?? = 10 ";
+				
+
+				}
+
+				// reposition all textbox positions without collision and 
+				// without appearing inside or in front of the snake
+				// do this for every textbox:........
+				// sketch:
+				/**
+				 * randomize all textbox positions
+				 * for first textbox, check that it doesnt collide with or block snake
+				 * add it to list of placed textboxes
+				 * for every subsequent textbox, do the same and also prevent collision with already placed textboxes
+				 * NOTE: Correct answer CAN appear in front of snake
+				 **/
+				// randomize positions
+				for (var i = 0; i < this.textboxes.length; i++){
+					this.textboxes[i].x = randInt(0,screenw-this.textboxes[i].width);
+					this.textboxes[i].y = randInt(0,screenh-this.textboxes[i].height);
+				}
+
+				let placed = [];
+				placed.push(this.textboxes[0]);
+
+				for(var i = 1; i < this.textboxes.length; i++){
+					let crash = false;
+					let b = this.textboxes[i];
+					b.x = randInt(0,screenw-b.width);
+					b.y = randInt(0,screenh-b.height);
+
+					//check collision with placed boxes
+					for( var j = 0; j < placed.length; j++){
+						if(collide(b,this.textboxes[j])){
+							crash = true;
+						}
+					}
+					//check collision with snake
+					if(collide(b,snake)){
+						crash = true;
+					}
+					//check if front of snake
+					if(snake.dir == "right" || snake.dir == "left"){
+						if(b.y <= snake.y + snake.height && b.height + b.y >= snake.y){
+							crash = true;
+						}
+					}else if(snake.dir == "up" || snake.dir == "down"){
+						if(b.x + b.width >= snake.x && b.x <= snake.x + snake.width){
+							crash = true;
+						}
+					}
+				
+
+					if (crash){
+						i--;
+					}else{
+						placed.push(b);
+					}
+				}
+				this.textboxes = placed;
+			}
+			draw(){
+				for(var i=0; i<this.textboxes.length; i++){
+					this.textboxes[i].draw();
+					//window.alert(this.textboxes[i].txt);
+				}
+			}
+
+		}
+
+		class Snake{
+			constructor(){
+				this.size = screenw/20;
+				this.width = this.height = this.size;
+				//this.head = [200,200];
+				this.x = screenw/2;
+				this.y = screenh/2;
+				this.body = [[this.x-this.size,this.y],[this.x-this.size-this.size,this.y]];
+				this.dir = "right"
+				this.turned = false
+				this.score = 0;
+				this.textboxes = [];
+				this.txt = "I UKE 5 LÆRER VI OM PROGRAMMERING I MATTETIMENE! <3";
+
+				for(var i = 0; i < this.txt.length; i++){
+					this.textboxes.push(new Textbox(this.txt[i],0,0));
+				}
+				console.log(this.textboxes)
+			}
+
+			draw(){
+				screen.fillStyle = "orange";
+				for (var i = this.body.length - 1; i >= 0; i--){
+					screen.strokeStyle = "black";
+					screen.strokeRect(this.body[i][0],this.body[i][1],this.size,this.size);
+					screen.fillStyle = "orange";
+					screen.fillRect(this.body[i][0],this.body[i][1],this.size,this.size);
+					if(i <= this.textboxes.length -1){
+						this.textboxes[i].x = this.body[i][0]
+						this.textboxes[i].y = this.body[i][1]
+						this.textboxes[i].draw();
+					}
+				}
+				screen.fillStyle = "black";
+				screen.fillRect(this.x,this.y,this.size,this.size);
+
+
+			}
+
+			die(){
+				screen.fillStyle = "red";
+				screen.fillRect(0,0,screenw,screenh);
+				var wait = (ms) => {
+				    const start = Date.now();
+				    let now = start;
+				    while (now - start < ms) {
+				      now = Date.now();
+				    }
+				}
+				wait(250);
+				
+				
+				if(snake.body.length >3){
+					snake.score -= 2;
+					snake.body.length -= 2;
+				}
+				
+				//snake.x = screenw/2;
+				//snake.y = screenh/2;
+				//snake.dir = "right";
+				
+				//snake = new Snake();
+				task.new();
+			}
+
+
+			move(){		
+				//move every piece of the body to the piece before it
+				if (this.body.length > 1){
+					for (var i = this.body.length - 1 ; i > 0; i--) {
+						this.body[i][0] = this.body[i-1][0];
+						this.body[i][1] = this.body[i-1][1];
+					}
+				}
+				//move first body piece to head pos 
+				this.body[0][0] = this.x;
+				this.body[0][1] = this.y;
+				//move head
+				if (this.dir =="right"){
+					this.x += this.size;
+				}
+				else if (this.dir =="left"){
+					this.x -= this.size;
+				}
+				else if (this.dir =="up"){
+					this.y -= this.size;
+				}
+				else if (this.dir =="down"){
+					this.y += this.size;
+				}
+				if(this.x < 0){
+					this.x = screenw-this.size;
+				}
+				else if(this.x > screenw-this.size){
+					this.x = 0;
+				}
+				else if(this.y < 0){
+					this.y = screenh-this.size;
+				}
+				else if(this.y > screenh-this.size){
+					this.y = 0;
+				}
+				this.turned = false;
+				this.x = this.x;
+				this.y = this.y;
+				//if crash with body parts; die
+				for(var k = 1; k < this.body.length; k++){
+					if (this.x == this.body[k][0] && this.y == this.body[k][1]){
+						this.die();
+					}
+				}
+
+				//eat num
+				for (var i = 0; i < task.textboxes.length; i++){
+					if (collide(snake,task.textboxes[i])){
+						if(task.textboxes[i].txt == task.ans){
+							console.log("correct");
+							snake.grow();
+						}else{
+							this.die();
+						}
+					}
+				}
+			}
+
+			grow(){
+				this.score += 1;
+				document.getElementById("score").innerHTML = "Score: " + this.score;
+				this.body.push([this.body[this.body.length-1][0],this.body[this.body.length-1][1]])
+				task.new();
+			}
+		}
+
+		function collide(r1,r2){
+			//console.log("checking ",r1,r2);
+			if (r1.x < r2.x + r2.width && r1.x +r1.width > r2.x && r1.y < r2.y + r2.height && r1.height + r1.y > r2.y){
+				//console.log("crash",r1,r2);
+				return true;
+			}
+			return false;
+		}
+
+		function pause(){
+			paused = !paused;
+		}
+
+		function change_direction(event){
+			if(snake.turned){
+				return
+			}
+			const LEFT_KEY = 37;
+			const RIGHT_KEY = 39;
+			const UP_KEY = 38;
+			const DOWN_KEY = 40;
+			const key = event.keyCode;
+
+			if(key == LEFT_KEY && snake.dir != "right"){
+				snake.dir = "left";
+			}
+			if(key == RIGHT_KEY && snake.dir != "left"){
+				snake.dir = "right";
+			}
+			if(key == UP_KEY && snake.dir != "down"){
+				snake.dir = "up";
+			}
+			if(key == DOWN_KEY && snake.dir != "up"){
+				snake.dir = "down";
+			}
+			if(key == 70){
+				snake.grow();
+			}
+			snake.turned = true;
+		}
+
+		function main(){
+			setTimeout(function onTick(){
+				if(!paused){
+					clearCanvas();
+					snake.move();
+					task.draw();
+					snake.draw();
+					//testtext.draw();
+				}
+				main();
+			},180)	
+
+		}
+
+		snake = new Snake();
+		task = new Task();
+		testtext = new Textbox("hello",100,100);
+
+		main()
+		
+
+
+	</script>
+	</body>
+</html>
